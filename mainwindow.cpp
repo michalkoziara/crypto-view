@@ -1,18 +1,18 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-// biblioteki obslugi Json
+// JSON support libraries
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QLoggingCategory>
 
-// biblioteki obslugi okna wykresu
+// Graph libraries
 #include <QLogValueAxis>
 #include <QValueAxis>
 #include <QChart>
 
-// biblioteki obslugi wykresow
+// Chart libraries
 #include <QtCharts/QCandlestickSet>
 #include <QtCharts/QBarCategoryAxis>
 #include <QtCharts/QCandlestickSeries>
@@ -20,7 +20,7 @@
 
 #include <QDateTimeAxis>
 
-// rysowanie
+// Painting libraries
 #include <QVector>
 #include <QPainter>
 #include <QSplineSeries>
@@ -31,23 +31,23 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    qDebug()<<"Wersja SSL przewidywana z QT: "<<QSslSocket::sslLibraryBuildVersionString();
-    qDebug()<<"Wersja SSL uzywana podczas uruchomienia: "<<QSslSocket::sslLibraryVersionNumber();
-    qDebug()<<"Sciezki bibliotek: "<<QCoreApplication::libraryPaths();
+    qDebug()<<"Expected SSL version: "<<QSslSocket::sslLibraryBuildVersionString();
+    qDebug()<<"SSL version used at startup: "<<QSslSocket::sslLibraryVersionNumber();
+    qDebug()<<"Library paths: "<<QCoreApplication::libraryPaths();
 
     manager = new QNetworkAccessManager();
     downloadCoinList();
 
-    chartView = new QChartView(this);    
+    chartView = new QChartView(this);
     chartView->setRenderHint(QPainter::Antialiasing);
 
     chartView_indicators = new QChartView(this);
     chartView_indicators->setRenderHint(QPainter::Antialiasing);
-    // dodaje wykres do layoutu
+    // Add the chart to the layout
     chart = new QChart();
     chart_indicators = new QChart();
 
-    // wyglad tla wykresu
+    // Configure the appearance of the chart background
     QLinearGradient plotAreaGradient;
     plotAreaGradient.setStart(QPointF(0, 0));
     plotAreaGradient.setFinalStop(QPointF(0, 1));
@@ -93,8 +93,7 @@ void MainWindow::downloadComplete(QNetworkReply* reply)
         return;
     }
 
-    //przeksztalcam w json
-
+    // Convert to JSON
     QJsonParseError err;
     QJsonDocument jsonResponse = QJsonDocument::fromJson(reply->readAll(), &err);
     reply->deleteLater();
@@ -133,7 +132,7 @@ void MainWindow::on_request_complete(QNetworkReply* reply)
     QString strReply = (QString)reply->readAll();
     reply->deleteLater();
 
-    //przeksztalcam w json
+    // Convert to JSON
     QJsonDocument jsonResponse = QJsonDocument::fromJson(strReply.toLatin1());
 
     qDebug() << jsonResponse.isArray();
@@ -141,7 +140,7 @@ void MainWindow::on_request_complete(QNetworkReply* reply)
 
     QJsonArray out_array = jsonResponse.array();
 
-    // ustawiam serie swiec japonskich
+    // Set candlestick series
     QtCharts::QCandlestickSeries *series =  new QCandlestickSeries();
     series->setIncreasingColor(QColor(Qt::green));
     series->setDecreasingColor(QColor(Qt::red));
@@ -153,7 +152,7 @@ void MainWindow::on_request_complete(QNetworkReply* reply)
     foreach (const QJsonValue & v, out_array)
     {
         qDebug() << v;
-        // ustawiam parametry swiecy
+        // Set the parameters of single candle
         const qreal timestamp = v.toArray().at(0).toDouble();
         double open = QString(v.toArray().at(1).toString()).toDouble();
         double high = QString(v.toArray().at(2).toString()).toDouble();
@@ -170,11 +169,10 @@ void MainWindow::on_request_complete(QNetworkReply* reply)
         QtCharts::QCandlestickSet *candlestickSet =
                 new QtCharts::QCandlestickSet(open,high,low,close,timestamp);
 
+        // Add single candle to chart series
         series->append(candlestickSet);
 
-        // dodaje pojedyncza swiece do serii wykresu
-
-        // podpisy
+        // Add time signatures
         if(histo_time=="d")
             categories << QDateTime::fromMSecsSinceEpoch(candlestickSet->timestamp()).toString("dd MMM\n");
         else if(histo_time == "h")
@@ -186,14 +184,14 @@ void MainWindow::on_request_complete(QNetworkReply* reply)
    // categories << QString::number(candlestickSet->timestamp());
     }
 
-    // Tytul okna
+    // Set window title
     QFont font;
     font.setPixelSize(18);
     chart->setTitleFont(font);
     chart->setTitleBrush(QBrush(Qt::black));
     chart->setTitle(ui->comboBox_2->itemText(combo2_index));
 
-    // tworze wykres w oknie wykresu
+    // Create the chart in the window
     chart->addSeries(series);
     chart->legend()->hide();
 
@@ -220,9 +218,6 @@ void MainWindow::on_request_complete(QNetworkReply* reply)
     }
 
     chartView->setChart(chart);
-
-
-    // indicator charts
 
     chart_indicators->addSeries(series_line);
     chart_indicators->createDefaultAxes();
