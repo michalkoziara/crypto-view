@@ -7,6 +7,7 @@ Cryptocurrency prices are collected from Binance API.
 ### Prerequisites
 
 * Qt - https://www.qt.io/
+
 Detailed information about installation and configurations are provided at developers' site.
 
 ## Technology Stack
